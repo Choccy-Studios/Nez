@@ -89,6 +89,7 @@ namespace Nez.ImGuiTools
 		{
 			// Get font texture from ImGui
 			var io = ImGui.GetIO();
+			io.Fonts.Clear();
 
 			if (options._includeDefaultFont)
 				DefaultFontPtr = io.Fonts.AddFontDefault();
@@ -108,7 +109,10 @@ namespace Nez.ImGuiTools
 
 			// Should a texture already have been built previously, unbind it first so it can be deallocated
 			if (_fontTextureId.HasValue)
+			{
+				_loadedTextures[_fontTextureId.Value].Dispose();
 				UnbindTexture(_fontTextureId.Value);
+			}
 
 			// Bind the new texture to an ImGui-friendly id
 			_fontTextureId = BindTexture(tex2d);

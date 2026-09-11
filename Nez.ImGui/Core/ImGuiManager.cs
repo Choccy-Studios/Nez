@@ -285,6 +285,8 @@ namespace Nez.ImGuiTools
 		/// <returns></returns>
 		public IntPtr BindTexture(Texture2D texture) => _renderer.BindTexture(texture);
 
+		public void RebuildFontAtlas(ImGuiOptions options) => _renderer.RebuildFontAtlas(options);
+
 		/// <summary>
 		/// creates an EntityInspector window
 		/// </summary>
