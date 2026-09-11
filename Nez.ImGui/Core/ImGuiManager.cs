@@ -24,6 +24,7 @@ namespace Nez.ImGuiTools
 		public bool ShowCoreWindow = true;
 		public bool ShowSeperateGameWindow = true;
 		public bool ShowMenuBar = true;
+		public Action CustomMenuBar;
 
 		public bool FocusGameWindowOnMiddleClick = false;
 		public bool FocusGameWindowOnRightClick = false;
@@ -85,7 +86,9 @@ namespace Nez.ImGuiTools
 		/// </summary>
 		void LayoutGui()
 		{
-			if (ShowMenuBar)
+			if (CustomMenuBar != null)
+				CustomMenuBar();
+			else if (ShowMenuBar)
 				DrawMainMenuBar();
 
 			if (ShowSeperateGameWindow)
