@@ -247,6 +247,9 @@ namespace Nez.Particles
 						collisionConfig.CollidesWithLayers);
 					foreach (var neighbor in neighbors)
 					{
+						if (neighbor.IsTrigger)
+							continue;
+
 						CollisionResult result;
 						if (_circleCollisionShape.CollidesWithShape(neighbor.Shape, out result))
 						{
