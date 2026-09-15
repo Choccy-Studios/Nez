@@ -265,6 +265,11 @@ namespace Nez.Sprites
 			}
 		}
 
+		public void PlayRandomStart(string name, LoopMode loopMode = LoopMode.Loop, float maxStartTime = 1f)
+		{
+			Core.Schedule(Nez.Random.NextFloat(maxStartTime), (t) => Play(name, loopMode));
+		}
+
 		public SpriteAnimator PlayAfter(string name, string nextAnimationName, LoopMode loopMode = LoopMode.Loop)
 		{
 			OnAnimationCompletedEvent += (animationName) =>
