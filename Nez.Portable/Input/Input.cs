@@ -89,18 +89,28 @@ namespace Nez
 		}
 
 
-		public static void Update()
+		public static void Update(bool suppress = false)
 		{
 			Touch.Update();
 
 			_previousKbState = _currentKbState;
-			_currentKbState = Keyboard.GetState();
+			_currentKbState = suppress ? new KeyboardState() : Keyboard.GetState();
 
 			_previousMouseState = _currentMouseState;
 			_currentMouseState = Mouse.GetState();
+			if (suppress)
+			{
+				// keep the cursor position and freeze the wheel so nothing jumps when focus returns
+				_currentMouseState = new MouseState(_currentMouseState.X, _currentMouseState.Y, _previousMouseState.ScrollWheelValue,
+					ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released, ButtonState.Released);
+			}
 
 			for (var i = 0; i < _maxSupportedGamePads; i++)
+			{
 				GamePads[i].Update();
+				if (suppress && GamePads[i].CurrentState.IsConnected)
+					GamePads[i].CurrentState = new GamePadState(new GamePadThumbSticks(), new GamePadTriggers(), new GamePadButtons(), new GamePadDPad());
+			}
 
 			for (var i = 0; i < _virtualInputs.Length; i++)
 				_virtualInputs.Buffer[i].Update();
