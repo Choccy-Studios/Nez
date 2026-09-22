@@ -132,21 +132,20 @@ namespace Nez
 
 				if (_areBoundsDirty)
 				{
+					// the scene RenderTarget is what this Camera renders into. Outside of Draw the GraphicsDevice Viewport is the
+					// backbuffer, which differs from the RenderTarget whenever a design resolution smaller than the screen is in use.
+					var view = ViewRect();
+
 					// top-left and bottom-right are needed by either rotated or non-rotated bounds
-					var topLeft = ScreenToWorldPoint(new Vector2(Core.GraphicsDevice.Viewport.X + _inset.left,
-						Core.GraphicsDevice.Viewport.Y + _inset.top));
-					var bottomRight = ScreenToWorldPoint(new Vector2(
-						Core.GraphicsDevice.Viewport.X + Core.GraphicsDevice.Viewport.Width - _inset.right,
-						Core.GraphicsDevice.Viewport.Y + Core.GraphicsDevice.Viewport.Height - _inset.bottom));
+					var topLeft = ScreenToWorldPoint(new Vector2(view.X + _inset.left, view.Y + _inset.top));
+					var bottomRight = ScreenToWorldPoint(new Vector2(view.X + view.Width - _inset.right,
+						view.Y + view.Height - _inset.bottom));
 
 					if (Entity.Transform.Rotation != 0)
 					{
 						// special care for rotated bounds. we need to find our absolute min/max values and create the bounds from that
-						var topRight = ScreenToWorldPoint(new Vector2(
-							Core.GraphicsDevice.Viewport.X + Core.GraphicsDevice.Viewport.Width - _inset.right,
-							Core.GraphicsDevice.Viewport.Y + _inset.top));
-						var bottomLeft = ScreenToWorldPoint(new Vector2(Core.GraphicsDevice.Viewport.X + _inset.left,
-							Core.GraphicsDevice.Viewport.Y + Core.GraphicsDevice.Viewport.Height - _inset.bottom));
+						var topRight = ScreenToWorldPoint(new Vector2(view.X + view.Width - _inset.right, view.Y + _inset.top));
+						var bottomLeft = ScreenToWorldPoint(new Vector2(view.X + _inset.left, view.Y + view.Height - _inset.bottom));
 
 						var minX = Mathf.MinOf(topLeft.X, bottomRight.X, topRight.X, bottomLeft.X);
 						var maxX = Mathf.MaxOf(topLeft.X, bottomRight.X, topRight.X, bottomLeft.X);
@@ -301,6 +300,16 @@ namespace Nez
 		/// </summary>
 		/// <param name="newWidth">New width.</param>
 		/// <param name="newHeight">New height.</param>
+		static Rectangle ViewRect()
+		{
+			var renderTarget = Core.Scene?.SceneRenderTarget;
+			if (renderTarget != null)
+				return new Rectangle(0, 0, renderTarget.Width, renderTarget.Height);
+
+			var viewport = Core.GraphicsDevice.Viewport;
+			return new Rectangle(viewport.X, viewport.Y, viewport.Width, viewport.Height);
+		}
+
 		internal void OnSceneRenderTargetSizeChanged(int newWidth, int newHeight)
 		{
 			_isProjectionMatrixDirty = true;
