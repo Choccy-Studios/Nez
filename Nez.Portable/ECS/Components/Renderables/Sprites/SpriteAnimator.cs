@@ -137,9 +137,8 @@ namespace Nez.Sprites
 
 			CurrentElapsedTime += Time.DeltaTime;
 			FrameTimeLeft -= Time.DeltaTime;
-			if (ShouldChangeFrame())
+			if (ShouldChangeFrame() && NextFrame())
 			{
-				NextFrame();
 				var key = new Tuple<string, int>(CurrentAnimationName, CurrentFrame);
 				if (OnFrameEnterActions.TryGetValue(key, out var action))
 				{
@@ -148,13 +147,13 @@ namespace Nez.Sprites
 			}
 		}
 
-		public virtual void NextFrame()
+		public virtual bool NextFrame()
 		{
 			switch (CurrentLoopMode)
 			{
 				case LoopMode.Loop:
 					SetFrame((CurrentFrame + 1) % FrameCount);
-					break;
+					return true;
 
 				case LoopMode.Once:
 				case LoopMode.ClampForever:
@@ -162,17 +161,16 @@ namespace Nez.Sprites
 					if (newFrame >= FrameCount)
 					{
 						SetCompleted(CurrentLoopMode == LoopMode.Once);
+						return false;
 					}
-					else
-					{
-						SetFrame(newFrame);
-					}
-					break;
+
+					SetFrame(newFrame);
+					return true;
 
 				case LoopMode.PingPong:
 					if (FrameCount == 1)
 					{
-						break;
+						return false;
 					}
 
 					switch (PingPongLoopState)
@@ -186,22 +184,25 @@ namespace Nez.Sprites
 					}
 
 					ParsePingPongLoop();
-					break;
+					return true;
+
 				case LoopMode.PingPongOnce:
 					if (CurrentFrame == 0)
 					{
 						if (_pingPongOnceAnimationStarted)
 						{
 							SetCompleted(true);
-							break;
+							return false;
 						}
 
 						_pingPongOnceAnimationStarted = true;
 					}
 
 					ParsePingPongLoop();
-					break;
+					return true;
 			}
+
+			return false;
 		}
 
 		/// <summary>
