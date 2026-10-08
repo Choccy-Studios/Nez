@@ -126,7 +126,9 @@ namespace Nez.Sprites
 
 		public SpriteAnimator OnFrameEnter(string animationName, int frameIndex, Action action)
 		{
-			OnFrameEnterActions[new Tuple<string, int>(animationName, frameIndex)] = action;
+			var key = new Tuple<string, int>(animationName, frameIndex);
+			OnFrameEnterActions.TryGetValue(key, out var existing);
+			OnFrameEnterActions[key] = existing + action;
 			return this;
 		}
 
