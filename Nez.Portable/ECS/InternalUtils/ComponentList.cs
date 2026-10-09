@@ -131,11 +131,9 @@ namespace Nez
 			if (_componentsToRemove.Count > 0)
 			{
 				for (int i = 0; i < _componentsToRemove.Count; i++)
-				{
 					HandleRemove(_componentsToRemove[i]);
-					_components.Remove(_componentsToRemove[i]);
-				}
 
+				RemoveDetachedComponents();
 				_componentsToRemove.Clear();
 			}
 
@@ -178,6 +176,26 @@ namespace Nez
 				_updatableComponents.Sort(compareUpdatableOrder);
 				_isComponentListUnsorted = false;
 			}
+		}
+
+		/// <summary>
+		/// drops every Component that HandleRemove detached, in one pass, keeping the order of the rest
+		/// </summary>
+		void RemoveDetachedComponents()
+		{
+			var buffer = _components.Buffer;
+			var kept = 0;
+			for (var i = 0; i < _components.Length; i++)
+			{
+				var component = buffer[i];
+				if (component.Entity == null)
+					continue;
+
+				buffer[kept++] = component;
+			}
+
+			System.Array.Clear(buffer, kept, _components.Length - kept);
+			_components.Length = kept;
 		}
 
 		void HandleRemove(Component component)
