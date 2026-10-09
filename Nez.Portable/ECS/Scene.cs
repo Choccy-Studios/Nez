@@ -424,6 +424,8 @@ namespace Nez
 		{
 			if (Core.Headless) { return ;}
 
+			DrawCallStats.BeginFrame();
+
 			if (_renderers.Length == 0)
 			{
 				Debug.Error("There are no Renderers in the Scene!");
@@ -455,7 +457,9 @@ namespace Nez
 					Camera.ForceMatrixUpdate();
 				}
 
+				DrawCallStats.BeginSection();
 				_renderers.Buffer[i].Render(this);
+				DrawCallStats.EndSection(_renderers.Buffer[i]);
 				lastRendererHadRenderTarget = _renderers.Buffer[i].RenderTexture != null;
 			}
 		}
@@ -482,7 +486,9 @@ namespace Nez
 
 						var source = isEven ? _sceneRenderTarget : _destinationRenderTarget;
 						var destination = !isEven ? _sceneRenderTarget : _destinationRenderTarget;
+						DrawCallStats.BeginSection();
 						_postProcessors.Buffer[i].Process(source, destination);
+						DrawCallStats.EndSection(_postProcessors.Buffer[i]);
 					}
 				}
 			}
@@ -500,7 +506,9 @@ namespace Nez
 				// force a Camera matrix update to account for the new Viewport size
 				if (_afterPostProcessorRenderers.Buffer[i].Camera != null)
 					_afterPostProcessorRenderers.Buffer[i].Camera.ForceMatrixUpdate();
+				DrawCallStats.BeginSection();
 				_afterPostProcessorRenderers.Buffer[i].Render(this);
+				DrawCallStats.EndSection(_afterPostProcessorRenderers.Buffer[i]);
 			}
 
 			// if we have a screenshot request deal with it before the final render to the backbuffer
@@ -516,6 +524,8 @@ namespace Nez
 
 				_screenshotRequestCallback = null;
 			}
+
+			DrawCallStats.BeginSection();
 
 			// render our final result to the backbuffer or let our delegate do so
 			if (_finalRenderDelegate != null)
@@ -533,6 +543,8 @@ namespace Nez
 				Graphics.Instance.Batcher.Draw(currentRenderTarget, _finalRenderDestinationRect, Color.White);
 				Graphics.Instance.Batcher.End();
 			}
+
+			DrawCallStats.EndSection(_finalRenderDelegate);
 		}
 
 		void OnGraphicsDeviceReset() => UpdateResolutionScaler();

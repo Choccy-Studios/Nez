@@ -234,6 +234,7 @@ namespace Nez
 			Insist.IsFalse(_beginCalled,
 				"Begin has been called before calling End after the last call to Begin. Begin cannot be called again until End has been successfully called.");
 			_beginCalled = true;
+			DrawCallStats.CountBatch();
 
 			_blendState = blendState ?? BlendState.AlphaBlend;
 			_samplerState = samplerState ?? Core.DefaultSamplerState;
@@ -1095,12 +1096,14 @@ namespace Nez
 					pass.Apply();
 					GraphicsDevice.Textures[0] = texture;
 					GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, baseSprite * 4, 0, batchSize * 2);
+					DrawCallStats.CountDraw(texture, batchSize);
 				}
 			}
 			else
 			{
 				GraphicsDevice.Textures[0] = texture;
 				GraphicsDevice.DrawIndexedPrimitives(PrimitiveType.TriangleList, baseSprite * 4, 0, batchSize * 2);
+				DrawCallStats.CountDraw(texture, batchSize);
 			}
 		}
 
