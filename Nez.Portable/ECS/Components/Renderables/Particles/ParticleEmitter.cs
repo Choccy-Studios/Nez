@@ -65,6 +65,8 @@ namespace Nez.Particles
 		bool _playOnAwake;
 		[Inspectable] ParticleEmitterConfig _emitterConfig;
 
+		static readonly Dictionary<(Blend, Blend), Material> _sharedMaterials = new Dictionary<(Blend, Blend), Material>();
+
 
 		public ParticleEmitter() : this(new ParticleEmitterConfig())
 		{
@@ -95,12 +97,20 @@ namespace Nez.Particles
 		/// </summary>
 		void Init()
 		{
-			// prep our custom BlendState and set the Material with it
-			var blendState = new BlendState();
-			blendState.ColorSourceBlend = blendState.AlphaSourceBlend = _emitterConfig.BlendFuncSource;
-			blendState.ColorDestinationBlend = blendState.AlphaDestinationBlend = _emitterConfig.BlendFuncDestination;
+			// emitters with the same blend funcs share one Material so the Renderer can keep them in a single batch
+			var source = _emitterConfig.BlendFuncSource;
+			var destination = _emitterConfig.BlendFuncDestination;
+			if (!_sharedMaterials.TryGetValue((source, destination), out var material))
+			{
+				var blendState = new BlendState();
+				blendState.ColorSourceBlend = blendState.AlphaSourceBlend = source;
+				blendState.ColorDestinationBlend = blendState.AlphaDestinationBlend = destination;
 
-			Material = new Material(blendState);
+				material = new Material(blendState);
+				_sharedMaterials[(source, destination)] = material;
+			}
+
+			Material = material;
 		}
 
 
