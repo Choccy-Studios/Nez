@@ -83,11 +83,28 @@ namespace Nez
 			_currentKbState = Keyboard.GetState();
 
 			_previousMouseState = new MouseState();
-			_currentMouseState = Mouse.GetState();
+			_currentMouseState = ReadMouseState();
 
 			MaxSupportedGamePads = 1;
 		}
 
+
+		/// <summary>
+		/// subtracted from the mouse position MonoGame reports. MonoGame derives that position from where SDL believes the
+		/// window is, which is not always where the OS put it (a macOS fullscreen Space on a notched display, for one).
+		/// </summary>
+		public static Point MouseOriginOffset;
+
+		static MouseState ReadMouseState()
+		{
+			var state = Mouse.GetState();
+			if (MouseOriginOffset == Point.Zero)
+				return state;
+
+			return new MouseState(state.X - MouseOriginOffset.X, state.Y - MouseOriginOffset.Y, state.ScrollWheelValue,
+				state.LeftButton, state.MiddleButton, state.RightButton, state.XButton1, state.XButton2,
+				state.HorizontalScrollWheelValue);
+		}
 
 		public static void Update(bool suppress = false)
 		{
@@ -97,7 +114,7 @@ namespace Nez
 			_currentKbState = suppress ? new KeyboardState() : Keyboard.GetState();
 
 			_previousMouseState = _currentMouseState;
-			_currentMouseState = Mouse.GetState();
+			_currentMouseState = ReadMouseState();
 			if (suppress)
 			{
 				// keep the cursor position and freeze the wheel so nothing jumps when focus returns

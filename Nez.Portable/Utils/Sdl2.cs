@@ -25,6 +25,7 @@ namespace Nez {
 			SDL_getenv = Native.LoadFunction<d_sdl_getenv>(sdl, nameof(SDL_getenv));
 			SDL_GetWindowDisplayIndex = Native.LoadFunction<d_sdl_getwindowdisplayindex>(sdl, nameof(SDL_GetWindowDisplayIndex));
 			SDL_GetDisplayBounds = Native.LoadFunction<d_sdl_getdisplaybounds>(sdl, nameof(SDL_GetDisplayBounds));
+			SDL_GetDisplayUsableBounds = Native.LoadFunction<d_sdl_getdisplaybounds>(sdl, nameof(SDL_GetDisplayUsableBounds));
 		}
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
@@ -74,16 +75,29 @@ namespace Nez {
 
 		public static d_sdl_getdisplaybounds SDL_GetDisplayBounds;
 
+		public static d_sdl_getdisplaybounds SDL_GetDisplayUsableBounds;
+
 		/// <summary>
 		/// desktop-space bounds of the display the window is on. MonoGame only exposes that display's size, not where it sits.
 		/// </summary>
 		public static bool TryGetWindowDisplayBounds(IntPtr window, out Rectangle bounds) {
+			return TryGetWindowDisplayRect(window, SDL_GetDisplayBounds, out bounds);
+		}
+
+		/// <summary>
+		/// the part of the window's display left over once the menu bar, Dock or taskbar are taken out
+		/// </summary>
+		public static bool TryGetWindowDisplayUsableBounds(IntPtr window, out Rectangle bounds) {
+			return TryGetWindowDisplayRect(window, SDL_GetDisplayUsableBounds, out bounds);
+		}
+
+		private static bool TryGetWindowDisplayRect(IntPtr window, d_sdl_getdisplaybounds getRect, out Rectangle bounds) {
 			bounds = default;
-			if (SDL_GetWindowDisplayIndex == null || SDL_GetDisplayBounds == null)
+			if (SDL_GetWindowDisplayIndex == null || getRect == null)
 				return false;
 
 			var displayIndex = SDL_GetWindowDisplayIndex(window);
-			if (displayIndex < 0 || SDL_GetDisplayBounds(displayIndex, out var rect) != 0)
+			if (displayIndex < 0 || getRect(displayIndex, out var rect) != 0)
 				return false;
 
 			bounds = new Rectangle(rect.x, rect.y, rect.w, rect.h);
