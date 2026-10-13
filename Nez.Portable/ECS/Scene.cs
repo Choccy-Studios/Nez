@@ -614,6 +614,10 @@ namespace Nez
 					// exact design size render texture
 					renderTargetWidth = designSize.X;
 					renderTargetHeight = designSize.Y;
+
+					// fills the screen by definition. Going through the float scale below can truncate a pixel short.
+					_finalRenderDestinationRect = new Rectangle(0, 0, screenSize.X, screenSize.Y);
+					rectCalculated = true;
 					break;
 				case SceneResolutionPolicy.NoBorder:
 					// exact design size render texture
