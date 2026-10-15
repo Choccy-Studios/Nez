@@ -41,9 +41,6 @@ namespace Nez
 			}
 		}
 
-		/// <summary>
-		/// renderers draw from the per-layer lists, so the full list is only sorted when something reads it
-		/// </summary>
 		void SortComponentsIfNeeded()
 		{
 			if (!_componentsNeedSort)

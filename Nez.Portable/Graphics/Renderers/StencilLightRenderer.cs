@@ -54,13 +54,7 @@ namespace Nez
 		/// </summary>
 		public ILightOccluderSource OccluderSource;
 
-		/// <summary>
-		/// skips the whole pass, leaving the RenderTexture as it is. Set it when the result cannot change the scene.
-		/// </summary>
 		public bool Skip;
-
-		public static bool TightBounds = true;
-		public static bool ScissorShadows = true;
 
 		const int CIRCLE_APPROXIMATION_VERTS = 12;
 		Vector2[] _vertBuffer = new Vector2[4];
@@ -114,7 +108,7 @@ namespace Nez
 			Insist.IsNotNull(RenderTexture, $"{nameof(StencilLightRenderer)} requires a RenderTexture!");
 
 			var cam = Camera ?? scene.Camera;
-			StencilLight.WorldUnitsPerPixel = TightBounds ? 1f / cam.RawZoom : float.MaxValue;
+			StencilLight.WorldUnitsPerPixel = 1f / cam.RawZoom;
 			var previousScissor = Core.GraphicsDevice.ScissorRectangle;
 			BeginRender(cam);
 			_stencilDirty = false;
@@ -184,11 +178,8 @@ namespace Nez
 			if (occluderCount > 0)
 			{
 				_stencilDirty = true;
-				if (ScissorShadows)
-				{
-					Core.GraphicsDevice.RasterizerState = _shadowRasterizerState;
-					Core.GraphicsDevice.ScissorRectangle = ScissorFor(renderable.Bounds, cam);
-				}
+				Core.GraphicsDevice.RasterizerState = _shadowRasterizerState;
+				Core.GraphicsDevice.ScissorRectangle = ScissorFor(renderable.Bounds, cam);
 
 				_primitiveBatch.Begin(cam.ProjectionMatrix, cam.TransformMatrix);
 				if (OccluderSource != null)

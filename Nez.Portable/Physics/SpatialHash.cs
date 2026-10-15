@@ -228,7 +228,6 @@ namespace Nez.Spatial
 		/// <param name="layerMask">Layer mask.</param>
 		public HashSet<Collider> AabbBroadphase(ref RectangleF bounds, Collider excludeCollider, int layerMask)
 		{
-			// HashSet.Clear costs its capacity, so one big query would tax every small one after it
 			if (_tempHashset.Count > TempHashsetShrinkThreshold)
 				_tempHashset = new HashSet<Collider>();
 			else
@@ -263,10 +262,6 @@ namespace Nez.Spatial
 			return _tempHashset;
 		}
 
-		/// <summary>
-		/// same colliders in the same order as <see cref="AabbBroadphase(ref RectangleF, Collider, int)"/>, written to
-		/// <paramref name="results"/>. Bounds inside a single cell skip the de-duplicating set, since a cell lists a collider once.
-		/// </summary>
 		public void AabbBroadphase(ref RectangleF bounds, int layerMask, List<Collider> results)
 		{
 			results.Clear();
