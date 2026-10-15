@@ -43,6 +43,7 @@ namespace Nez.Spatial
 		/// shared HashSet used to return collision info
 		/// </summary>
 		HashSet<Collider> _tempHashset = new HashSet<Collider>();
+		const int TempHashsetShrinkThreshold = 256;
 
 
 		public SpatialHash(int cellSize = 100)
@@ -227,7 +228,11 @@ namespace Nez.Spatial
 		/// <param name="layerMask">Layer mask.</param>
 		public HashSet<Collider> AabbBroadphase(ref RectangleF bounds, Collider excludeCollider, int layerMask)
 		{
-			_tempHashset.Clear();
+			// HashSet.Clear costs its capacity, so one big query would tax every small one after it
+			if (_tempHashset.Count > TempHashsetShrinkThreshold)
+				_tempHashset = new HashSet<Collider>();
+			else
+				_tempHashset.Clear();
 
 			var p1 = CellCoords(bounds.X, bounds.Y);
 			var p2 = CellCoords(bounds.Right, bounds.Bottom);
@@ -256,6 +261,38 @@ namespace Nez.Spatial
 			}
 
 			return _tempHashset;
+		}
+
+		/// <summary>
+		/// same colliders in the same order as <see cref="AabbBroadphase(ref RectangleF, Collider, int)"/>, written to
+		/// <paramref name="results"/>. Bounds inside a single cell skip the de-duplicating set, since a cell lists a collider once.
+		/// </summary>
+		public void AabbBroadphase(ref RectangleF bounds, int layerMask, List<Collider> results)
+		{
+			results.Clear();
+
+			var p1 = CellCoords(bounds.X, bounds.Y);
+			var p2 = CellCoords(bounds.Right, bounds.Bottom);
+			if (p1 != p2)
+			{
+				foreach (var collider in AabbBroadphase(ref bounds, null, layerMask))
+					results.Add(collider);
+				return;
+			}
+
+			var cell = CellAtPosition(p1.X, p1.Y);
+			if (cell == null)
+				return;
+
+			for (var i = 0; i < cell.Count; i++)
+			{
+				var collider = cell[i];
+				if (!Flags.IsFlagSet(layerMask, collider.PhysicsLayer))
+					continue;
+
+				if (bounds.Intersects(collider.Bounds))
+					results.Add(collider);
+			}
 		}
 
 

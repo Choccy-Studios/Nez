@@ -23,9 +23,35 @@ namespace Nez
 
 		#region array access
 
-		public int Count => _components.Length;
+		public int Count
+		{
+			get
+			{
+				SortComponentsIfNeeded();
+				return _components.Length;
+			}
+		}
 
-		public IRenderable this[int index] => _components.Buffer[index];
+		public IRenderable this[int index]
+		{
+			get
+			{
+				SortComponentsIfNeeded();
+				return _components.Buffer[index];
+			}
+		}
+
+		/// <summary>
+		/// renderers draw from the per-layer lists, so the full list is only sorted when something reads it
+		/// </summary>
+		void SortComponentsIfNeeded()
+		{
+			if (!_componentsNeedSort)
+				return;
+
+			_components.Sort(CompareUpdatableOrder);
+			_componentsNeedSort = false;
+		}
 
 		#endregion
 
@@ -90,12 +116,6 @@ namespace Nez
 
 		public void UpdateLists()
 		{
-			if (_componentsNeedSort)
-			{
-				_components.Sort(CompareUpdatableOrder);
-				_componentsNeedSort = false;
-			}
-
 			if (_unsortedRenderLayers.Count > 0)
 			{
 				for (int i = 0, count = _unsortedRenderLayers.Count; i < count; i++)

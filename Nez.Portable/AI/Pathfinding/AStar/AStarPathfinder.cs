@@ -41,10 +41,7 @@ namespace Nez.AI.Pathfinding
 			{
 				iterations++;
 				if (iterations > maxIterations)
-				{
-					System.Console.WriteLine("AStarPathfinder: max iterations hit, aborting search");
 					break;
-				}
 
 				var current = frontier.Dequeue();
 

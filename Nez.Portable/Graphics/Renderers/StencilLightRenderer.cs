@@ -54,12 +54,26 @@ namespace Nez
 		/// </summary>
 		public ILightOccluderSource OccluderSource;
 
+		/// <summary>
+		/// skips the whole pass, leaving the RenderTexture as it is. Set it when the result cannot change the scene.
+		/// </summary>
+		public bool Skip;
+
+		public static bool TightBounds = true;
+		public static bool ScissorShadows = true;
+
 		const int CIRCLE_APPROXIMATION_VERTS = 12;
 		Vector2[] _vertBuffer = new Vector2[4];
 		readonly List<Vector2[]> _occluderBuffer = new List<Vector2[]>(64);
 		PrimitiveBatch _primitiveBatch;
 		DepthStencilState _depthStencilState;
 		BlendState _stencilOnlyBlendState;
+		readonly RasterizerState _shadowRasterizerState = new RasterizerState
+		{
+			CullMode = CullMode.CullCounterClockwiseFace,
+			ScissorTestEnable = true
+		};
+		bool _stencilDirty;
 
 		public StencilLightRenderer(int renderOrder, int renderLayer, RenderTexture renderTexture) : base(renderOrder, null)
 		{
@@ -94,10 +108,16 @@ namespace Nez
 
 		public override void Render(Scene scene)
 		{
+			if (Skip)
+				return;
+
 			Insist.IsNotNull(RenderTexture, $"{nameof(StencilLightRenderer)} requires a RenderTexture!");
 
 			var cam = Camera ?? scene.Camera;
+			StencilLight.WorldUnitsPerPixel = TightBounds ? 1f / cam.RawZoom : float.MaxValue;
+			var previousScissor = Core.GraphicsDevice.ScissorRectangle;
 			BeginRender(cam);
+			_stencilDirty = false;
 
 			var renderables = scene.RenderableComponents.ComponentsWithRenderLayer(RenderLayer);
 			for (var i = 0; i < renderables.Length; i++)
@@ -111,6 +131,28 @@ namespace Nez
 			// 	DebugRender(scene, cam);
 
 			EndRender();
+			Core.GraphicsDevice.ScissorRectangle = previousScissor;
+		}
+
+		Rectangle ScissorFor(RectangleF bounds, Camera cam)
+		{
+			var a = cam.WorldToScreenPoint(new Vector2(bounds.Left, bounds.Top));
+			var b = cam.WorldToScreenPoint(new Vector2(bounds.Right, bounds.Top));
+			var c = cam.WorldToScreenPoint(new Vector2(bounds.Left, bounds.Bottom));
+			var d = cam.WorldToScreenPoint(new Vector2(bounds.Right, bounds.Bottom));
+
+			var left = (int)System.Math.Floor(MathHelper.Min(MathHelper.Min(a.X, b.X), MathHelper.Min(c.X, d.X))) - 1;
+			var top = (int)System.Math.Floor(MathHelper.Min(MathHelper.Min(a.Y, b.Y), MathHelper.Min(c.Y, d.Y))) - 1;
+			var right = (int)System.Math.Ceiling(MathHelper.Max(MathHelper.Max(a.X, b.X), MathHelper.Max(c.X, d.X))) + 1;
+			var bottom = (int)System.Math.Ceiling(MathHelper.Max(MathHelper.Max(a.Y, b.Y), MathHelper.Max(c.Y, d.Y))) + 1;
+
+			var viewport = Core.GraphicsDevice.Viewport;
+			left = System.Math.Max(left, 0);
+			top = System.Math.Max(top, 0);
+			right = System.Math.Min(right, viewport.Width);
+			bottom = System.Math.Min(bottom, viewport.Height);
+
+			return new Rectangle(left, top, System.Math.Max(0, right - left), System.Math.Max(0, bottom - top));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -131,11 +173,22 @@ namespace Nez
 				occluderCount = IEnumerableExtensions.IEnumerableExt.Count(colliders);
 			}
 
-			if (occluderCount > 0)
+			if (occluderCount > 0 || _stencilDirty)
 			{
 				Core.GraphicsDevice.DepthStencilState = _depthStencilState;
 				Core.GraphicsDevice.BlendState = _stencilOnlyBlendState;
 				Core.GraphicsDevice.Clear(ClearOptions.Stencil, new Color(0, 0, 0, 0), 0, 0);
+				_stencilDirty = false;
+			}
+
+			if (occluderCount > 0)
+			{
+				_stencilDirty = true;
+				if (ScissorShadows)
+				{
+					Core.GraphicsDevice.RasterizerState = _shadowRasterizerState;
+					Core.GraphicsDevice.ScissorRectangle = ScissorFor(renderable.Bounds, cam);
+				}
 
 				_primitiveBatch.Begin(cam.ProjectionMatrix, cam.TransformMatrix);
 				if (OccluderSource != null)
@@ -196,12 +249,11 @@ namespace Nez
 					var point1 = nextVertex + (Vector2.Normalize(nextVertex - lightPos) * Screen.Width);
 					var point2 = vertex + (Vector2.Normalize(vertex - lightPos) * Screen.Width);
 
-					var poly = new Vector2[] { nextVertex, point1, point2, vertex };
 					_vertBuffer[0] = nextVertex;
 					_vertBuffer[1] = point1;
 					_vertBuffer[2] = point2;
 					_vertBuffer[3] = vertex;
-					_primitiveBatch.DrawPolygon(poly, 4, Color.Black);
+					_primitiveBatch.DrawPolygon(_vertBuffer, 4, Color.Black);
 				}
 			}
 		}

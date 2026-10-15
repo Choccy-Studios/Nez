@@ -10,6 +10,11 @@ namespace Nez.Particles
 	{
 		public override RectangleF Bounds => _bounds;
 
+		/// <summary>
+		/// skips drawing particles that are entirely outside the camera. They would not touch a pixel.
+		/// </summary>
+		public static bool CullToCamera = true;
+
 		public bool IsPaused => _isPaused;
 		public bool IsPlaying => _active && !_isPaused;
 		public bool IsStopped => !_active && !_isPaused;
@@ -220,12 +225,25 @@ namespace Nez.Particles
 				return;
 
 			var rootPosition = Entity.Transform.Position + _localOffset;
+			var view = camera.Bounds;
+			var extentScale = _emitterConfig.Sprite == null
+				? 1f
+				: Math.Max(1f, _emitterConfig.Sprite.SourceRect.Height / (float)_emitterConfig.Sprite.SourceRect.Width);
 
 			// loop through all the particles updating their location and color
 			for (var i = 0; i < _particles.Count; i++)
 			{
 				var currentParticle = _particles[i];
 				var pos = _emitterConfig.SimulateInWorldSpace ? currentParticle.SpawnPosition : rootPosition;
+
+				if (CullToCamera)
+				{
+					var center = pos + currentParticle.Position;
+					var extent = currentParticle.ParticleSize * extentScale + 1f;
+					if (center.X + extent < view.Left || center.X - extent > view.Right ||
+					    center.Y + extent < view.Top || center.Y - extent > view.Bottom)
+						continue;
+				}
 
 				if (_emitterConfig.Sprite == null)
 					batcher.Draw(Graphics.Instance.PixelTexture, pos + currentParticle.Position, currentParticle.Color,

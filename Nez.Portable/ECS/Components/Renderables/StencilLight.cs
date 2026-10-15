@@ -9,16 +9,27 @@ namespace Nez
 	/// </summary>
 	public class StencilLight : RenderableComponent
 	{
+		/// <summary>
+		/// world units per render pixel. The shader's radius is in render pixels, so with a zoom above 1 the lit
+		/// disc is smaller than <see cref="Radius"/> world units and the bounds shrink to fit it.
+		/// </summary>
+		public static float WorldUnitsPerPixel = 1f;
+
+		float _boundsWorldUnitsPerPixel = -1f;
+
 		public override RectangleF Bounds
 		{
 			get
 			{
-				if (_areBoundsDirty)
+				if (_areBoundsDirty || _boundsWorldUnitsPerPixel != WorldUnitsPerPixel)
 				{
 					var scale = MathHelper.Max(Entity.Transform.Scale.X, Entity.Transform.Scale.Y);
-					_bounds.CalculateBounds(Entity.Transform.Position, _localOffset, new Vector2(_radius * scale, _radius * scale),
-						Vector2.One, 0, _radius * scale * 2f, _radius * scale * 2f);
+					var radius = _radius * scale;
+					radius = MathHelper.Min(radius, radius * WorldUnitsPerPixel + _localOffset.Length() + 1f);
+					_bounds.CalculateBounds(Entity.Transform.Position, _localOffset, new Vector2(radius, radius),
+						Vector2.One, 0, radius * 2f, radius * 2f);
 					_areBoundsDirty = false;
+					_boundsWorldUnitsPerPixel = WorldUnitsPerPixel;
 				}
 
 				return _bounds;

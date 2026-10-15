@@ -13,6 +13,7 @@ namespace Nez.Particles
 		/// shared Circle used for collisions checks
 		/// </summary>
 		static Circle _circleCollisionShape = new Circle(0);
+		static readonly System.Collections.Generic.List<Collider> _neighbors = new System.Collections.Generic.List<Collider>();
 
 		public Vector2 Position;
 		public Vector2 SpawnPosition;
@@ -243,10 +244,11 @@ namespace Nez.Particles
 
 					_circleCollisionShape.RecalculateBounds(ParticleSize * 0.5f * collisionConfig.RadiusScale,
 						pos + Position);
-					var neighbors = Physics.BoxcastBroadphase(ref _circleCollisionShape.Bounds,
-						collisionConfig.CollidesWithLayers);
-					foreach (var neighbor in neighbors)
+					Physics.BoxcastBroadphase(ref _circleCollisionShape.Bounds, collisionConfig.CollidesWithLayers,
+						_neighbors);
+					for (var n = 0; n < _neighbors.Count; n++)
 					{
+						var neighbor = _neighbors[n];
 						if (neighbor.IsTrigger)
 							continue;
 

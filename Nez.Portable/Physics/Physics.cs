@@ -246,6 +246,14 @@ namespace Nez
 			return _spatialHash.AabbBroadphase(ref rect, null, layerMask);
 		}
 
+		/// <summary>
+		/// same as <see cref="BoxcastBroadphase(ref RectangleF, int)"/> but fills <paramref name="results"/> in the same order
+		/// </summary>
+		public static void BoxcastBroadphase(ref RectangleF rect, int layerMask, List<Collider> results)
+		{
+			_spatialHash.AabbBroadphase(ref rect, layerMask, results);
+		}
+
 
 		/// <summary>
 		/// returns all colliders with bounds that are intersected by collider.bounds excluding the passed-in collider (self)
